@@ -1,0 +1,30 @@
+﻿<Window x:Class="MeteorMosquito.MeteorMosquitoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MeteorMosquito"
+        mc:Ignorable="d"
+        Title="MeteorMosquito" Height="381" Width="567" Background="#FF272727" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid VerticalAlignment="Top" Margin="5,5,5,5">
+            <Label Content="Input device" HorizontalAlignment="Left" Width="110"/>
+            <ComboBox x:Name="DeviceList" MinWidth="199" Margin="110,0,60,0" SelectionChanged="DeviceList_SelectionChanged"/>
+            <Button x:Name="ApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,0,5,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
+
+        </Grid>
+        <Grid VerticalAlignment="Bottom">
+            <Label Content="processing delay:" HorizontalAlignment="Left"/>
+            <Label x:Name="TimingLabel" Content="0µs" HorizontalContentAlignment="Right"/>
+        </Grid>
+    </Grid>
+    <Window.Resources>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Foreground" Value="#FFE2E2E2"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+        </Style>
+
+    </Window.Resources>
+</Window>

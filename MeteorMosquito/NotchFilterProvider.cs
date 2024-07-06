@@ -4,30 +4,29 @@ using System.Diagnostics;
 
 namespace MeteorMosquito
 {
-    class NotchFilterProvider : ISampleProvider
+    public class NotchFilterProvider : ISampleProvider
     {
         private readonly ISampleProvider sourceProvider;
-        private readonly CompositeNotchFilter compositeFilter;
 
         private readonly Stopwatch sw = new();
         private readonly TimingsCircularBuffer<double> processingTimes = new(384);
 
-        private readonly List<BiQuadFilter> filters = new();
+        private readonly List<BiQuadFilter>[] filtersPerChannel;
+        private long sampleCount = 0;
 
-        private int sampleCount = 0;
-
-        public bool FilterEnabled
-        {
-            get; set;
-        } = true;
+        public bool FilterEnabled { get; set; } = true;
 
         public NotchFilterProvider(ISampleProvider sourceProvider, params (float frequency, float q)[] filterParams)
         {
             this.sourceProvider = sourceProvider;
-            compositeFilter = new CompositeNotchFilter(sourceProvider.WaveFormat.SampleRate, filterParams);
+            int channels = sourceProvider.WaveFormat.Channels;
+            filtersPerChannel = new List<BiQuadFilter>[channels];
 
-            for (int i = 0; i < filterParams.Length; i++)
-                filters.Add(BiQuadFilter.NotchFilter(sourceProvider.WaveFormat.SampleRate, filterParams[i].frequency, filterParams[i].q));
+            // need to do this because otherwise we apply the same filter on both and we create harmonics
+            for (int ch = 0; ch < channels; ch++)
+            {
+                filtersPerChannel[ch] = filterParams.Select(p => BiQuadFilter.NotchFilter(sourceProvider.WaveFormat.SampleRate, p.frequency, p.q)).ToList();
+            }
         }
 
         public WaveFormat WaveFormat => sourceProvider.WaveFormat;
@@ -35,38 +34,48 @@ namespace MeteorMosquito
         public int Read(float[] buffer, int offset, int count)
         {
             sw.Restart();
-            int bytesRead = sourceProvider.Read(buffer, offset, count);
+
+            int samplesRead = sourceProvider.Read(buffer, offset, count);
+            int channels = sourceProvider.WaveFormat.Channels;
 
             if (FilterEnabled)
             {
-                for (int i = 0; i < bytesRead; i++)
+                for (int i = 0; i < samplesRead; i += channels)
                 {
-                    float sample = buffer[offset + i];
-                    foreach (var f in filters)
-                        sample = f.Transform(sample);
-                    buffer[offset + i] = sample;
+                    for (int ch = i; ch < i + channels; ch++)
+                    {
+                        float sample = buffer[offset + ch];
+                        foreach (var f in filtersPerChannel[ch % channels])
+                        {
+                            sample = f.Transform(sample);
+                        }
+                        buffer[offset + ch] = sample;
+                    }
                 }
             }
 
-            processingTimes.Push(sw.Elapsed.TotalMicroseconds);
-
             sw.Stop();
-            return bytesRead;
+            processingTimes.Push(sw.Elapsed.TotalMicroseconds);
+            sampleCount += samplesRead;
+
+            return samplesRead;
         }
 
-        public long GetTiming()
+        public double GetTiming()
         {
             return processingTimes.Average();
+
         }
 
-        public int GetSampleCount(bool Reset = true)
+        public long GetSampleCount(bool reset = true)
         {
             var s = sampleCount;
 
-            if (Reset)
+            if (reset)
                 sampleCount = 0;
 
             return s;
+
         }
     }
 }

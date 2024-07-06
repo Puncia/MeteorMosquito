@@ -8,16 +8,20 @@
         Title="MeteorMosquito" Height="381" Width="567" Background="#FF272727" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
 
     <Grid>
-        <Grid VerticalAlignment="Top" Margin="5,5,5,5">
-            <Label Content="Input device" HorizontalAlignment="Left" Width="110"/>
-            <ComboBox x:Name="DeviceList" MinWidth="199" Margin="110,0,60,0" SelectionChanged="DeviceList_SelectionChanged"/>
-            <Button x:Name="ApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,0,5,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
+        <StackPanel>
+            <Grid VerticalAlignment="Top" Margin="5,5,5,5">
+                <Label Content="Input device" HorizontalAlignment="Left" Width="110"/>
+                <ComboBox x:Name="DeviceList" MinWidth="199" Margin="110,0,60,0" SelectionChanged="DeviceList_SelectionChanged"/>
+                <Button x:Name="ApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,0,5,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
+            </Grid>
+            <Button x:Name="FilterToggle" VerticalAlignment="Top" HorizontalAlignment="Right" MinWidth="25" MinHeight="25" Margin="5,5,10,5" Click="Button_Click">Disable Filter</Button>
+        </StackPanel>
 
-        </Grid>
         <Grid VerticalAlignment="Bottom">
             <Label Content="processing delay:" HorizontalAlignment="Left"/>
             <Label x:Name="TimingLabel" Content="0µs" HorizontalContentAlignment="Right"/>
         </Grid>
+        <Label x:Name="DeviceInfoLabel" Content="" HorizontalAlignment="Left" Margin="116,36,0,0" VerticalAlignment="Top"/>
     </Grid>
     <Window.Resources>
         <Style TargetType="{x:Type Label}">

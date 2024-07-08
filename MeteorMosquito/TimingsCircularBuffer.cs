@@ -1,4 +1,6 @@
-﻿public class TimingsCircularBuffer<T>
+﻿using System.Diagnostics;
+
+public class TimingsCircularBuffer<T>
 {
     private T[] _buffer;
     private int _start;

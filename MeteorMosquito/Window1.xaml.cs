@@ -25,15 +25,17 @@ namespace MeteorMosquito
         public delegate void InputDeviceSetEventHandler(int Index);
         public event InputDeviceSetEventHandler? OnInputDeviceSet;
         public event EventHandler? OnFilterDisableToggle;
-
+        public event EventHandler? OnAudioDisableToggle;
 
         public readonly record struct CaptureDevice(string DeviceName, bool IsDefault, int Channels, int SampleRate, int BitsPerSample, int Volume);
 
-        public void SetTiming(uint t)
+        public void UpdateTelemetry(int sampleCount, int filterCount, int timing)
         {
             Dispatcher.BeginInvoke(() =>
             {
-                TimingLabel.Content = t + "µs";
+                SampleCountLabel.Content = sampleCount + " samples/s";
+                TimingLabel.Content = timing + "µs/sample";
+                FilterCountLabel.Content = filterCount + " filters";
             });
         }
 
@@ -45,29 +47,29 @@ namespace MeteorMosquito
             foreach (CaptureDevice captureDevice in captureDevices)
             {
                 if (!captureDevice.IsDefault) i--;
-                DeviceList.Items.Add(captureDevice.DeviceName);
+                InputDeviceList.Items.Add(captureDevice.DeviceName);
             }
-            DeviceList.SelectedIndex = i;
+            InputDeviceList.SelectedIndex = i;
             _selectedIndex = i;
         }
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            _selectedIndex = DeviceList.SelectedIndex;
+            _selectedIndex = InputDeviceList.SelectedIndex;
             OnInputDeviceSet?.Invoke(_selectedIndex);
-            ApplyButton.IsEnabled = false;
+            InputApplyButton.IsEnabled = false;
         }
 
         private void DeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            DeviceInfoLabel.Content =
-                $"{_devices[DeviceList.SelectedIndex].DeviceName}\n{_devices[DeviceList.SelectedIndex].Channels}" +
-                $"{(_devices[DeviceList.SelectedIndex].Channels > 1 ? " channels" : " channel")}" +
-                $", {_devices[DeviceList.SelectedIndex].SampleRate}Hz, {_devices[DeviceList.SelectedIndex].BitsPerSample}bit, {_devices[DeviceList.SelectedIndex].Volume}%";
+            InputDeviceInfoLabel.Content =
+                $"{_devices[InputDeviceList.SelectedIndex].DeviceName}\n{_devices[InputDeviceList.SelectedIndex].Channels}" +
+                $"{(_devices[InputDeviceList.SelectedIndex].Channels > 1 ? " channels" : " channel")}" +
+                $", {_devices[InputDeviceList.SelectedIndex].SampleRate}Hz, {_devices[InputDeviceList.SelectedIndex].BitsPerSample}bit, {_devices[InputDeviceList.SelectedIndex].Volume}%";
 
-            if (DeviceList.SelectedIndex != _selectedIndex && _selectedIndex != -1)
-                ApplyButton.IsEnabled = true;
-            else ApplyButton.IsEnabled = false;
+            if (InputDeviceList.SelectedIndex != _selectedIndex && _selectedIndex != -1)
+                InputApplyButton.IsEnabled = true;
+            else InputApplyButton.IsEnabled = false;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -75,9 +77,22 @@ namespace MeteorMosquito
             OnFilterDisableToggle?.Invoke(sender, e);
         }
 
-        public void ToggleFilter(bool toggle)
+        public void ToggleFilter(bool Enable, bool disableButton = false)
         {
-            FilterToggle.Content = toggle ? "Disable filter" : "Enable filter";
+            FilterToggle.Content = Enable ? "Disable filter" : "Enable filter";
+            FilterToggle.IsEnabled = !disableButton;
+        }
+
+        internal void AudioToggle_Click(object sender, RoutedEventArgs e)
+        {
+            OnAudioDisableToggle?.Invoke(sender, e);
+        }
+
+        internal void ToggleAudio(bool Enable)
+        {
+            AudioToggle.Content = Enable ? "Stop audio" : "Start audio";
+            StatPanel.Visibility = Enable ? Visibility.Visible : Visibility.Collapsed;
+            ToggleFilter(Enable, !Enable);
         }
 
         public MeteorMosquitoWindow()

@@ -6,29 +6,84 @@
         xmlns:local="clr-namespace:MeteorMosquito"
         mc:Ignorable="d"
         Title="MeteorMosquito" Height="381" Width="567" Background="#FF272727" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
-
     <Grid>
         <StackPanel>
-            <Grid VerticalAlignment="Top" Margin="5,5,5,5">
-                <Label Content="Input device" HorizontalAlignment="Left" Width="110"/>
-                <ComboBox x:Name="DeviceList" MinWidth="199" Margin="110,0,60,0" SelectionChanged="DeviceList_SelectionChanged"/>
-                <Button x:Name="ApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,0,5,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
-            </Grid>
-            <Button x:Name="FilterToggle" VerticalAlignment="Top" HorizontalAlignment="Right" MinWidth="25" MinHeight="25" Margin="5,5,10,5" Click="Button_Click">Disable Filter</Button>
+            <StackPanel x:Name="InputPanel" Background="#FF2C2C38" MinHeight="100">
+                <Grid VerticalAlignment="Top" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Row="0" Grid.ColumnSpan="2" Content="Input device" HorizontalAlignment="Left"/>
+
+                    <ComboBox Grid.Row="1" Grid.Column="0" x:Name="InputDeviceList" Margin="5,5,5,0" SelectionChanged="DeviceList_SelectionChanged"/>
+                    <Button Grid.Row="1" Grid.Column="1" x:Name="InputApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,5,0,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
+                    <Label x:Name="InputDeviceInfoLabel" Grid.Row="3" Content="" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                </Grid>
+            </StackPanel>
+
+            <Border BorderThickness="0.4" BorderBrush="#FF464646"></Border>
+            <Border BorderThickness="0.4" BorderBrush="#FF232323"></Border>
+            <Border BorderThickness="0.4" BorderBrush="#FF464646"></Border>
+            <Border BorderThickness="0.4" BorderBrush="#FF232323"></Border>
+
+            <StackPanel x:Name="OutputPanel" Background="#FF2C2C38" MinHeight="100">
+                <Grid VerticalAlignment="Top" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+                    <Label Grid.Row="0" Grid.ColumnSpan="2" Content="Output device" HorizontalAlignment="Left"/>
+
+                    <ComboBox Grid.Row="1" Grid.Column="0" x:Name="OutputDeviceList" Margin="5,5,5,0" SelectionChanged="DeviceList_SelectionChanged"/>
+                    <Button Grid.Row="1" Grid.Column="1" x:Name="OutputApplyButton" Content="Apply" HorizontalAlignment="Right" Margin="0,5,0,0" Width="50" Click="ApplyButton_Click" IsEnabled="False"/>
+                    <Label x:Name="OutputDeviceInfoLabel" Grid.Row="3" Content="" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                </Grid>
+            </StackPanel>
+            <Border BorderThickness="0.4" BorderBrush="#FF464646"></Border>
+            <Border BorderThickness="0.4" BorderBrush="#FF232323"></Border>
+            <Button x:Name="FilterToggle" HorizontalAlignment="Right" VerticalAlignment="Bottom" MinWidth="80" MinHeight="23" Margin="5,5,5,1" Click="Button_Click" IsEnabled="False">Disable Filter</Button>
+            <Button x:Name="AudioToggle" HorizontalAlignment="Right" VerticalAlignment="Bottom" MinWidth="80" MinHeight="23" Margin="5,1" Click="AudioToggle_Click">Start audio</Button>
+
         </StackPanel>
 
-        <Grid VerticalAlignment="Bottom">
-            <Label Content="processing delay:" HorizontalAlignment="Left"/>
-            <Label x:Name="TimingLabel" Content="0µs" HorizontalContentAlignment="Right"/>
-        </Grid>
-        <Label x:Name="DeviceInfoLabel" Content="" HorizontalAlignment="Left" Margin="116,36,0,0" VerticalAlignment="Top"/>
+        <StackPanel Name="StatPanel" VerticalAlignment="Bottom" Background="#FF2F2F2F" Visibility="Hidden">
+            <Border BorderThickness="0.5" BorderBrush="#FF464646"></Border>
+            <Border BorderThickness="0.7" BorderBrush="#FF232323"></Border>
+            <Label x:Name="TimingLabel" Content="" HorizontalContentAlignment="Left" FontSize="12" Margin="-3"/>
+            <Label x:Name="SampleCountLabel" Content="" HorizontalContentAlignment="Left" FontSize="12" Margin="-3"/>
+            <Label x:Name="FilterCountLabel" Content="" HorizontalContentAlignment="Left"  FontSize="12" Margin="-3"/>
+        </StackPanel>
+
     </Grid>
     <Window.Resources>
         <Style TargetType="{x:Type Label}">
             <Setter Property="Foreground" Value="#FFE2E2E2"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Global User Interface"/>
         </Style>
-
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Global User Interface"/>
+        </Style>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Global User Interface"/>
+        </Style>
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="Global User Interface"/>
+        </Style>
     </Window.Resources>
 </Window>

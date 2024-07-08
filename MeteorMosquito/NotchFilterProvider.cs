@@ -4,20 +4,22 @@ using System.Diagnostics;
 
 namespace MeteorMosquito
 {
-    public class NotchFilterProvider : ISampleProvider
+    public class NotchFilterProvider : ISampleProvider, IDisposable
     {
         private readonly ISampleProvider sourceProvider;
 
         private readonly Stopwatch sw = new();
-        private readonly TimingsCircularBuffer<double> processingTimes = new(384);
+        private readonly TimingsCircularBuffer<double> processingTimes;
 
         private readonly List<BiQuadFilter>[] filtersPerChannel;
-        private long sampleCount = 0;
+        private int sampleCount = 0;
 
-        public bool FilterEnabled { get; set; } = true;
+        public bool FilterEnabled { get; internal set; } = true;
+        public bool AudioEnabled { get; internal set; } = true;
 
         public NotchFilterProvider(ISampleProvider sourceProvider, params (float frequency, float q)[] filterParams)
         {
+            processingTimes = new(100);
             this.sourceProvider = sourceProvider;
             int channels = sourceProvider.WaveFormat.Channels;
             filtersPerChannel = new List<BiQuadFilter>[channels];
@@ -31,43 +33,48 @@ namespace MeteorMosquito
 
         public WaveFormat WaveFormat => sourceProvider.WaveFormat;
 
+
         public int Read(float[] buffer, int offset, int count)
         {
-            sw.Restart();
-
-            int samplesRead = sourceProvider.Read(buffer, offset, count);
-            int channels = sourceProvider.WaveFormat.Channels;
-
-            if (FilterEnabled)
+            if (AudioEnabled)
             {
-                for (int i = 0; i < samplesRead; i += channels)
+                sw.Restart();
+
+                int samplesRead = sourceProvider.Read(buffer, offset, count);
+                int channels = sourceProvider.WaveFormat.Channels;
+
+                if (FilterEnabled)
                 {
-                    for (int ch = i; ch < i + channels; ch++)
+                    for (int i = 0; i < samplesRead; i += channels)
                     {
-                        float sample = buffer[offset + ch];
-                        foreach (var f in filtersPerChannel[ch % channels])
+                        for (int ch = i; ch < i + channels; ch++)
                         {
-                            sample = f.Transform(sample);
+                            float sample = buffer[offset + ch];
+                            foreach (var f in filtersPerChannel[ch % channels])
+                            {
+                                sample = f.Transform(sample);
+                            }
+                            buffer[offset + ch] = sample;
                         }
-                        buffer[offset + ch] = sample;
                     }
                 }
+
+                sw.Stop();
+                processingTimes.Push(sw.Elapsed.TotalMicroseconds);
+                sampleCount += samplesRead;
+
+                return samplesRead;
             }
 
-            sw.Stop();
-            processingTimes.Push(sw.Elapsed.TotalMicroseconds);
-            sampleCount += samplesRead;
-
-            return samplesRead;
+            return 0;
         }
 
-        public double GetTiming()
+        public int GetTiming()
         {
             return processingTimes.Average();
-
         }
 
-        public long GetSampleCount(bool reset = true)
+        public int GetSampleCount(bool reset = true)
         {
             var s = sampleCount;
 
@@ -76,6 +83,11 @@ namespace MeteorMosquito
 
             return s;
 
+        }
+
+        public void Dispose()
+        {
+            sampleCount = 0;
         }
     }
 }

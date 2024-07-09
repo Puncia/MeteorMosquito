@@ -9,19 +9,21 @@ namespace MeteorMosquito
     {
         static MeteorMosquitoWindow window1 = new();
 
-        static private List<MeteorMosquitoWindow.CaptureDevice> _devices = new();
+        static private (List<MeteorMosquitoWindow.Device> input, List<MeteorMosquitoWindow.Device> output) _devices = new();
 
         static private WaveInEvent? waveIn;
         static private WaveOutEvent? waveOut;
         static private NotchFilterProvider? notchFilterProvider;
         static private System.Timers.Timer? statTimer;
-        static private int selectedDevice = -1;
+        static private string selectedInputDevice = "";
+        static private string selectedOutputDevice = "";
 
         [STAThread]
         static void Main(string[] args)
         {
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
             window1.OnInputDeviceSet += Window1_OnInputDeviceSet;
+            window1.OnOutputDeviceSet += Window1_OnOutputDeviceSet;
             window1.Closed += Window1_Closed;
             window1.OnFilterDisableToggle += Window1_OnFilterDisableToggle;
             window1.OnAudioDisableToggle += Window1_OnAudioDisableToggle;
@@ -29,6 +31,7 @@ namespace MeteorMosquito
             Initialize(CreateProvider: false);
             window1.ShowDialog();
         }
+
 
         private static void Window1_OnAudioDisableToggle(object? sender, EventArgs e)
         {
@@ -76,7 +79,17 @@ namespace MeteorMosquito
             waveIn?.StopRecording();
             waveOut?.Stop();
             statTimer?.Stop();
-            selectedDevice = Index;
+            selectedInputDevice = _devices.input[Index].ID;
+
+            if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
+                Initialize(Enumerate: false);
+        }
+        private static void Window1_OnOutputDeviceSet(int Index)
+        {
+            waveIn?.StopRecording();
+            waveOut?.Stop();
+            statTimer?.Stop();
+            selectedOutputDevice = _devices.output[Index].ID;
 
             if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
                 Initialize(Enumerate: false);
@@ -89,42 +102,77 @@ namespace MeteorMosquito
                 _devices = EnumerateDevices();
                 window1.LoadDeviceNames(_devices);
 
-                if (selectedDevice < 0)
-                    selectedDevice = _devices.IndexOf(_devices.Where(d => d.IsDefault).First());
+                if (selectedInputDevice == string.Empty)
+                    selectedInputDevice = _devices.input.First(d => d.IsDefault).ID;
             }
 
             if (CreateProvider)
-                InitProvider(selectedDevice);
+                InitProvider(selectedInputDevice);
         }
 
-        private static List<MeteorMosquitoWindow.CaptureDevice> EnumerateDevices()
+        private static (List<MeteorMosquitoWindow.Device>, List<MeteorMosquitoWindow.Device>) EnumerateDevices()
+        {
+
+            return (EnumerateInputDevices(), EnumerateOutputDevices());
+        }
+        private static List<MeteorMosquitoWindow.Device> EnumerateInputDevices()
         {
             var en = new MMDeviceEnumerator();
-            List<MeteorMosquitoWindow.CaptureDevice> devices = new();
+            List<MeteorMosquitoWindow.Device> devices = new();
 
             var defaultDeviceID = en.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia).ID;
 
             foreach (var wasapi in en.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
             {
-                devices.Add(new MeteorMosquitoWindow.CaptureDevice(
+                devices.Add(new MeteorMosquitoWindow.Device(
                     wasapi.FriendlyName,
+                    wasapi.DeviceTopology.DeviceId,
                     wasapi.ID == defaultDeviceID ? true : false,
                     wasapi.AudioClient.MixFormat.Channels,
                     wasapi.AudioClient.MixFormat.SampleRate,
                     wasapi.AudioClient.MixFormat.BitsPerSample,
                     (int)(wasapi.AudioEndpointVolume.MasterVolumeLevelScalar * 100)));
+
+                Debug.WriteLine($"{wasapi.FriendlyName} {wasapi.DeviceTopology.DeviceId}");
             }
 
             return devices;
         }
 
-        private static void InitProvider(int deviceNumber)
+        private static List<MeteorMosquitoWindow.Device> EnumerateOutputDevices()
+        {
+            var en = new MMDeviceEnumerator();
+            List<MeteorMosquitoWindow.Device> devices = new();
+
+            var defaultDeviceID = en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia).ID;
+
+            foreach (var wasapi in en.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+            {
+                devices.Add(new MeteorMosquitoWindow.Device(
+                    wasapi.FriendlyName,
+                    wasapi.DeviceTopology.DeviceId,
+                    wasapi.ID == defaultDeviceID ? true : false,
+                    wasapi.AudioClient.MixFormat.Channels,
+                    wasapi.AudioClient.MixFormat.SampleRate,
+                    wasapi.AudioClient.MixFormat.BitsPerSample,
+                    (int)(wasapi.AudioEndpointVolume.MasterVolumeLevelScalar * 100)));
+
+                Debug.WriteLine($"{wasapi.FriendlyName} {wasapi.DeviceTopology.DeviceId}");
+
+            }
+
+            return devices;
+        }
+
+        private static void InitProvider(string deviceID)
         {
             waveIn = new WaveInEvent
             {
-                WaveFormat = new WaveFormat(_devices[deviceNumber].SampleRate, _devices[deviceNumber].BitsPerSample, _devices[deviceNumber].Channels),
+                WaveFormat = new WaveFormat(_devices.input.First((d) => d.ID == deviceID).SampleRate,
+                _devices.input.First((d) => d.ID == deviceID).BitsPerSample,
+                _devices.input.First((d) => d.ID == deviceID).Channels),
                 BufferMilliseconds = 20,
-                DeviceNumber = deviceNumber
+                DeviceNumber = _devices.input.IndexOf(_devices.input.First(d => d.ID == deviceID))
             };
 
             var waveProvider = new WaveInProvider(waveIn).ToSampleProvider();
@@ -153,12 +201,19 @@ namespace MeteorMosquito
                 (frequency: 20000.0f, q: 20000.0f / fixedBandwith),
             };
 
+            var outdev = selectedOutputDevice == string.Empty ? -1 : _devices.output.IndexOf(_devices.output.First((d) => d.ID == selectedOutputDevice));
+
             notchFilterProvider = new NotchFilterProvider(waveProvider, filterParams);
             waveOut = new WaveOutEvent
             {
                 DesiredLatency = 30,
-                NumberOfBuffers = 4
+                NumberOfBuffers = 4,
+                DeviceNumber = outdev
             };
+
+            if (outdev != -1)
+                Debug.WriteLine($"default => {_devices.output[outdev]}");
+
             waveOut.Init(notchFilterProvider);
             waveIn.StartRecording();
             waveOut.Play();

@@ -19,15 +19,18 @@ namespace MeteorMosquito
     /// </summary>
     public partial class MeteorMosquitoWindow : Window
     {
-        private int _selectedIndex = -1;
-        private List<CaptureDevice> _devices = new();
+        private int _selectedInputIndex = -1;
+        private int _selectedOutputIndex = -1;
+        private (List<Device> input, List<Device> output) _devices = new();
 
-        public delegate void InputDeviceSetEventHandler(int Index);
-        public event InputDeviceSetEventHandler? OnInputDeviceSet;
+        public delegate void DeviceSetEventHandler(int Index);
+        public event DeviceSetEventHandler? OnInputDeviceSet;
+        public event DeviceSetEventHandler? OnOutputDeviceSet;
+
         public event EventHandler? OnFilterDisableToggle;
         public event EventHandler? OnAudioDisableToggle;
 
-        public readonly record struct CaptureDevice(string DeviceName, bool IsDefault, int Channels, int SampleRate, int BitsPerSample, int Volume);
+        public readonly record struct Device(string DeviceName, string ID, bool IsDefault, int Channels, int SampleRate, int BitsPerSample, int Volume);
 
         public void UpdateTelemetry(int sampleCount, int filterCount, int timing)
         {
@@ -39,37 +42,59 @@ namespace MeteorMosquito
             });
         }
 
-        public void LoadDeviceNames(List<CaptureDevice> captureDevices)
+        public void LoadDeviceNames((List<Device> input, List<Device> ouput) captureDevices)
         {
             _devices = captureDevices;
 
-            int i = captureDevices.Count - 1;
-            foreach (CaptureDevice captureDevice in captureDevices)
+            int i = captureDevices.input.Count - 1;
+            foreach (Device captureDevice in captureDevices.input)
             {
                 if (!captureDevice.IsDefault) i--;
                 InputDeviceList.Items.Add(captureDevice.DeviceName);
             }
             InputDeviceList.SelectedIndex = i;
-            _selectedIndex = i;
+            _selectedInputIndex = i;
+
+            int y = captureDevices.ouput.Count - 1;
+            foreach (Device renderDevice in captureDevices.ouput)
+            {
+                if (!renderDevice.IsDefault) y--;
+                OutputDeviceList.Items.Add(renderDevice.DeviceName);
+            }
+            OutputDeviceList.SelectedIndex = y;
+            _selectedOutputIndex = y;
         }
 
-        private void ApplyButton_Click(object sender, RoutedEventArgs e)
+        private void InputApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            _selectedIndex = InputDeviceList.SelectedIndex;
-            OnInputDeviceSet?.Invoke(_selectedIndex);
+            _selectedInputIndex = InputDeviceList.SelectedIndex;
+            OnInputDeviceSet?.Invoke(_selectedInputIndex);
             InputApplyButton.IsEnabled = false;
         }
+        private void OutputApplyButton_Click(object sender, RoutedEventArgs e)
+        {
+            _selectedOutputIndex = OutputDeviceList.SelectedIndex;
+            OnOutputDeviceSet?.Invoke(_selectedOutputIndex);
+            OutputApplyButton.IsEnabled = false;
+        }
 
-        private void DeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void InputDeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             InputDeviceInfoLabel.Content =
-                $"{_devices[InputDeviceList.SelectedIndex].DeviceName}\n{_devices[InputDeviceList.SelectedIndex].Channels}" +
-                $"{(_devices[InputDeviceList.SelectedIndex].Channels > 1 ? " channels" : " channel")}" +
-                $", {_devices[InputDeviceList.SelectedIndex].SampleRate}Hz, {_devices[InputDeviceList.SelectedIndex].BitsPerSample}bit, {_devices[InputDeviceList.SelectedIndex].Volume}%";
+                $"{_devices.input[InputDeviceList.SelectedIndex].DeviceName}\n{_devices.input[InputDeviceList.SelectedIndex].Channels}" +
+                $"{(_devices.input[InputDeviceList.SelectedIndex].Channels > 1 ? " channels" : " channel")}" +
+                $", {_devices.input[InputDeviceList.SelectedIndex].SampleRate}Hz, {_devices.input[InputDeviceList.SelectedIndex].BitsPerSample}bit, {_devices.input[InputDeviceList.SelectedIndex].Volume}%";
 
-            if (InputDeviceList.SelectedIndex != _selectedIndex && _selectedIndex != -1)
+            if (InputDeviceList.SelectedIndex != _selectedInputIndex && _selectedInputIndex != -1)
                 InputApplyButton.IsEnabled = true;
             else InputApplyButton.IsEnabled = false;
+        }
+
+        private void OutputDeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (OutputDeviceList.SelectedIndex != _selectedOutputIndex && _selectedOutputIndex != -1)
+                OutputApplyButton.IsEnabled = true;
+            else OutputApplyButton.IsEnabled = false;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -94,6 +119,7 @@ namespace MeteorMosquito
             StatPanel.Visibility = Enable ? Visibility.Visible : Visibility.Collapsed;
             ToggleFilter(Enable, !Enable);
         }
+
 
         public MeteorMosquitoWindow()
         {

@@ -33,7 +33,6 @@ namespace MeteorMosquito
             window1.ShowDialog();
         }
 
-
         private static void Window1_OnAudioDisableToggle(object? sender, EventArgs e)
         {
             bool toggle = notchFilterProvider is not null;
@@ -75,24 +74,24 @@ namespace MeteorMosquito
             waveOut?.Stop();
         }
 
-        private static void Window1_OnInputDeviceSet(int Index)
+        private static void Window1_OnInputDeviceSet(MMDevice Index)
         {
             waveIn?.StopRecording();
             waveOut?.Stop();
             statTimer?.Stop();
-            selectedInputDevice = _devices.input[Index];
+            selectedInputDevice = Index;
 
             if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
             {
                 Initialize(Enumerate: false);
             }
         }
-        private static void Window1_OnOutputDeviceSet(int Index)
+        private static void Window1_OnOutputDeviceSet(MMDevice Index)
         {
             waveIn?.StopRecording();
             waveOut?.Stop();
             statTimer?.Stop();
-            selectedOutputDevice = _devices.output[Index];
+            selectedOutputDevice = Index;
 
             if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
             {

@@ -9,11 +9,11 @@ namespace MeteorMosquito
     /// </summary>
     public partial class MeteorMosquitoWindow : Window
     {
-        private int _selectedInputIndex = -1;
-        private int _selectedOutputIndex = -1;
         private (List<MMDevice> input, List<MMDevice> output) _devices = new();
 
-        public delegate void DeviceSetEventHandler(int Index);
+        private MMDevice? selectedInputDevice;
+        private MMDevice? selectedOutputDevice;
+        public delegate void DeviceSetEventHandler(MMDevice Index);
         public event DeviceSetEventHandler? OnInputDeviceSet;
         public event DeviceSetEventHandler? OnOutputDeviceSet;
 
@@ -32,47 +32,36 @@ namespace MeteorMosquito
 
         public void LoadDeviceNames((List<MMDevice> input, List<MMDevice> ouput) captureDevices)
         {
-            var default_render = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             var default_capture = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
+            var default_render = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             _devices = captureDevices;
 
-            int i = captureDevices.input.Count - 1;
             foreach (MMDevice captureDevice in captureDevices.input)
             {
-                if (captureDevice.ID != default_capture.ID)
-                {
-                    i--;
-                }
-
                 InputDeviceList.Items.Add(captureDevice.FriendlyName);
             }
-            InputDeviceList.SelectedIndex = i;
-            _selectedInputIndex = i;
+            InputDeviceList.SelectedItem = default_capture.FriendlyName;
+            selectedInputDevice = default_capture;
 
             int y = captureDevices.ouput.Count - 1;
             foreach (MMDevice renderDevice in captureDevices.ouput)
             {
-                if (renderDevice.ID != default_render.ID)
-                {
-                    y--;
-                }
-
                 OutputDeviceList.Items.Add(renderDevice.FriendlyName);
             }
-            OutputDeviceList.SelectedIndex = y;
-            _selectedOutputIndex = y;
+            OutputDeviceList.SelectedItem = default_render.FriendlyName;
+            selectedOutputDevice = default_render;
         }
 
         private void InputApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            _selectedInputIndex = InputDeviceList.SelectedIndex;
-            OnInputDeviceSet?.Invoke(_selectedInputIndex);
+            selectedInputDevice = _devices.input[InputDeviceList.SelectedIndex];
+            OnInputDeviceSet?.Invoke(_devices.input[InputDeviceList.SelectedIndex]);
             InputApplyButton.IsEnabled = false;
         }
         private void OutputApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            _selectedOutputIndex = OutputDeviceList.SelectedIndex;
-            OnOutputDeviceSet?.Invoke(_selectedOutputIndex);
+            selectedOutputDevice = _devices.output[OutputDeviceList.SelectedIndex];
+            OnOutputDeviceSet?.Invoke(_devices.output[OutputDeviceList.SelectedIndex]);
             OutputApplyButton.IsEnabled = false;
         }
 
@@ -93,7 +82,7 @@ namespace MeteorMosquito
                 $"{deviceId}\n{channelCount} {channelLabel}, {sampleRate}Hz, {bitsPerSample}bit, {volume}%";
 
 
-            if (InputDeviceList.SelectedIndex != _selectedInputIndex && _selectedInputIndex != -1)
+            if (selectedInputDevice is not null && _devices.input[InputDeviceList.SelectedIndex] != selectedInputDevice)
             {
                 InputApplyButton.IsEnabled = true;
             }
@@ -105,7 +94,7 @@ namespace MeteorMosquito
 
         private void OutputDeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (OutputDeviceList.SelectedIndex != _selectedOutputIndex && _selectedOutputIndex != -1)
+            if (selectedOutputDevice is not null && _devices.output[OutputDeviceList.SelectedIndex] != selectedOutputDevice)
             {
                 OutputApplyButton.IsEnabled = true;
             }

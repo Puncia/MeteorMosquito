@@ -1,16 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using NAudio.CoreAudioApi;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace MeteorMosquito
 {
@@ -21,7 +11,7 @@ namespace MeteorMosquito
     {
         private int _selectedInputIndex = -1;
         private int _selectedOutputIndex = -1;
-        private (List<Device> input, List<Device> output) _devices = new();
+        private (List<MMDevice> input, List<MMDevice> output) _devices = new();
 
         public delegate void DeviceSetEventHandler(int Index);
         public event DeviceSetEventHandler? OnInputDeviceSet;
@@ -29,8 +19,6 @@ namespace MeteorMosquito
 
         public event EventHandler? OnFilterDisableToggle;
         public event EventHandler? OnAudioDisableToggle;
-
-        public readonly record struct Device(string DeviceName, string ID, bool IsDefault, int Channels, int SampleRate, int BitsPerSample, int Volume);
 
         public void UpdateTelemetry(int sampleCount, int filterCount, int timing)
         {
@@ -42,24 +30,26 @@ namespace MeteorMosquito
             });
         }
 
-        public void LoadDeviceNames((List<Device> input, List<Device> ouput) captureDevices)
+        public void LoadDeviceNames((List<MMDevice> input, List<MMDevice> ouput) captureDevices)
         {
+            var default_render = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            var default_capture = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
             _devices = captureDevices;
 
             int i = captureDevices.input.Count - 1;
-            foreach (Device captureDevice in captureDevices.input)
+            foreach (MMDevice captureDevice in captureDevices.input)
             {
-                if (!captureDevice.IsDefault) i--;
-                InputDeviceList.Items.Add(captureDevice.DeviceName);
+                if (captureDevice.ID != default_capture.ID) i--;
+                InputDeviceList.Items.Add(captureDevice.FriendlyName);
             }
             InputDeviceList.SelectedIndex = i;
             _selectedInputIndex = i;
 
             int y = captureDevices.ouput.Count - 1;
-            foreach (Device renderDevice in captureDevices.ouput)
+            foreach (MMDevice renderDevice in captureDevices.ouput)
             {
-                if (!renderDevice.IsDefault) y--;
-                OutputDeviceList.Items.Add(renderDevice.DeviceName);
+                if (renderDevice.ID != default_render.ID) y--;
+                OutputDeviceList.Items.Add(renderDevice.FriendlyName);
             }
             OutputDeviceList.SelectedIndex = y;
             _selectedOutputIndex = y;
@@ -80,10 +70,20 @@ namespace MeteorMosquito
 
         private void InputDeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            var selectedDevice = _devices.input[InputDeviceList.SelectedIndex];
+            var audioClient = selectedDevice.AudioClient;
+            var mixFormat = audioClient.MixFormat;
+
+            var deviceId = selectedDevice.FriendlyName;
+            var channelCount = mixFormat.Channels;
+            var channelLabel = channelCount > 1 ? "channels" : "channel";
+            var sampleRate = mixFormat.SampleRate;
+            var bitsPerSample = mixFormat.BitsPerSample;
+            var volume = _devices.input[InputDeviceList.SelectedIndex].AudioEndpointVolume.MasterVolumeLevelScalar * 100;
+
             InputDeviceInfoLabel.Content =
-                $"{_devices.input[InputDeviceList.SelectedIndex].DeviceName}\n{_devices.input[InputDeviceList.SelectedIndex].Channels}" +
-                $"{(_devices.input[InputDeviceList.SelectedIndex].Channels > 1 ? " channels" : " channel")}" +
-                $", {_devices.input[InputDeviceList.SelectedIndex].SampleRate}Hz, {_devices.input[InputDeviceList.SelectedIndex].BitsPerSample}bit, {_devices.input[InputDeviceList.SelectedIndex].Volume}%";
+                $"{deviceId}\n{channelCount} {channelLabel}, {sampleRate}Hz, {bitsPerSample}bit, {volume}%";
+
 
             if (InputDeviceList.SelectedIndex != _selectedInputIndex && _selectedInputIndex != -1)
                 InputApplyButton.IsEnabled = true;
@@ -119,7 +119,6 @@ namespace MeteorMosquito
             StatPanel.Visibility = Enable ? Visibility.Visible : Visibility.Collapsed;
             ToggleFilter(Enable, !Enable);
         }
-
 
         public MeteorMosquitoWindow()
         {

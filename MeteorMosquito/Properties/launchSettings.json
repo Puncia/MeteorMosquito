@@ -1,7 +1,8 @@
 {
   "profiles": {
     "MeteorMosquito": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "nativeDebugging": false
     }
   }
 }

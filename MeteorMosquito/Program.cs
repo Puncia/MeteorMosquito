@@ -6,21 +6,21 @@ namespace MeteorMosquito
 {
     internal class Program
     {
-        static MeteorMosquitoWindow window1 = new();
+        private static readonly MeteorMosquitoWindow window1 = new();
 
-        static private (List<MMDevice> input, List<MMDevice> output) _devices = new();
+        private static (List<MMDevice> input, List<MMDevice> output) _devices = new();
 
-        static private WaveInEvent? waveIn;
-        static private WaveOutEvent? waveOut;
-        static private NotchFilterProvider? notchFilterProvider;
-        static private System.Timers.Timer? statTimer;
-        static private MMDevice? selectedInputDevice;
-        static private MMDevice? selectedOutputDevice;
-        static private MMDevice? defaultInputDevice;
-        static private MMDevice? defaultOutputDevice;
+        private static WaveInEvent? waveIn;
+        private static WaveOutEvent? waveOut;
+        private static NotchFilterProvider? notchFilterProvider;
+        private static System.Timers.Timer? statTimer;
+        private static MMDevice? selectedInputDevice;
+        private static MMDevice? selectedOutputDevice;
+        private static MMDevice? defaultInputDevice;
+        private static MMDevice? defaultOutputDevice;
 
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
             window1.OnInputDeviceSet += Window1_OnInputDeviceSet;
@@ -83,7 +83,9 @@ namespace MeteorMosquito
             selectedInputDevice = _devices.input[Index];
 
             if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
+            {
                 Initialize(Enumerate: false);
+            }
         }
         private static void Window1_OnOutputDeviceSet(int Index)
         {
@@ -93,7 +95,9 @@ namespace MeteorMosquito
             selectedOutputDevice = _devices.output[Index];
 
             if (notchFilterProvider is not null && notchFilterProvider.AudioEnabled)
+            {
                 Initialize(Enumerate: false);
+            }
         }
 
         private static void Initialize(bool Enumerate = true, bool CreateProvider = true)
@@ -104,11 +108,15 @@ namespace MeteorMosquito
                 window1.LoadDeviceNames(_devices);
 
                 if (selectedInputDevice is null)
+                {
                     selectedInputDevice = defaultInputDevice;
+                }
             }
 
             if (CreateProvider && selectedInputDevice is not null)
+            {
                 InitProvider(selectedInputDevice);
+            }
         }
 
         private static (List<MMDevice>, List<MMDevice>) EnumerateDevices() => (EnumerateInputDevices(), EnumerateOutputDevices());

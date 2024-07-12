@@ -79,7 +79,9 @@ namespace MeteorMosquito
             var s = sampleCount;
 
             if (reset)
+            {
                 sampleCount = 0;
+            }
 
             return s;
 

@@ -1,8 +1,6 @@
-﻿using System.Diagnostics;
-
-public class TimingsCircularBuffer<T>
+﻿public class TimingsCircularBuffer<T>
 {
-    private T[] _buffer;
+    private readonly T[] _buffer;
     private int _start;
     private int _end;
     private int _avg = -1;

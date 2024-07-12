@@ -39,7 +39,11 @@ namespace MeteorMosquito
             int i = captureDevices.input.Count - 1;
             foreach (MMDevice captureDevice in captureDevices.input)
             {
-                if (captureDevice.ID != default_capture.ID) i--;
+                if (captureDevice.ID != default_capture.ID)
+                {
+                    i--;
+                }
+
                 InputDeviceList.Items.Add(captureDevice.FriendlyName);
             }
             InputDeviceList.SelectedIndex = i;
@@ -48,7 +52,11 @@ namespace MeteorMosquito
             int y = captureDevices.ouput.Count - 1;
             foreach (MMDevice renderDevice in captureDevices.ouput)
             {
-                if (renderDevice.ID != default_render.ID) y--;
+                if (renderDevice.ID != default_render.ID)
+                {
+                    y--;
+                }
+
                 OutputDeviceList.Items.Add(renderDevice.FriendlyName);
             }
             OutputDeviceList.SelectedIndex = y;
@@ -86,15 +94,25 @@ namespace MeteorMosquito
 
 
             if (InputDeviceList.SelectedIndex != _selectedInputIndex && _selectedInputIndex != -1)
+            {
                 InputApplyButton.IsEnabled = true;
-            else InputApplyButton.IsEnabled = false;
+            }
+            else
+            {
+                InputApplyButton.IsEnabled = false;
+            }
         }
 
         private void OutputDeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (OutputDeviceList.SelectedIndex != _selectedOutputIndex && _selectedOutputIndex != -1)
+            {
                 OutputApplyButton.IsEnabled = true;
-            else OutputApplyButton.IsEnabled = false;
+            }
+            else
+            {
+                OutputApplyButton.IsEnabled = false;
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

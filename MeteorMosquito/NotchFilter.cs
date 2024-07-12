@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MeteorMosquito
+﻿namespace MeteorMosquito
 {
     internal class NotchFilter
     {
@@ -16,7 +10,9 @@ namespace MeteorMosquito
         public NotchFilter(double frequency, double sampleRate, double q = 1.0)
         {
             if (frequency <= 0 || frequency >= sampleRate / 2)
+            {
                 throw new ArgumentException("Frequency must be between 0 and Nyquist frequency");
+            }
 
             double w0 = 2 * Math.PI * frequency / sampleRate;
             double alpha = Math.Sin(w0) / (2 * q);
@@ -41,8 +37,8 @@ namespace MeteorMosquito
             y[1] = y[0];
 
             // Calculate output
-            double output = b[0] * x[0] + b[1] * x[1] + b[2] * x[2]
-                          - a[1] * y[1] - a[2] * y[2];
+            double output = (b[0] * x[0]) + (b[1] * x[1]) + (b[2] * x[2])
+                          - (a[1] * y[1]) - (a[2] * y[2]);
 
             y[0] = output;
 
